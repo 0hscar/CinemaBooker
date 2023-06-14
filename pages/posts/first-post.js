@@ -1,114 +1,85 @@
-import Link from 'next/link';
-// import Image from 'next/image';
 import Head from 'next/head';
-import Script from 'next/head';
 import Layout from '../../components/layout';
 import React from "react"
-import { useState  } from 'react';
+import { useState, useCallback } from 'react';
 
 
 export default function cinemaHall() {
-  
-  const [outerArray, setOuter] = useState(() => {
-    
-    const filler = Array.from({ length: 10 }, (_, index) => {
-      return Array.from({ length: 20 }, (_, subIndex) => ({
-        row : index+1,
-        seat: `Seat ${index * 20 + subIndex + 1}`,
-        free: true,
+
+  const [rows, setRows] = useState(() => {
+    return Array.from({ length: 10 }, () => {
+      return Array.from({ length: 20 }, () => ({
         reserved: false,
         booked: false
       }));
     });
+  });
 
-    return filler
-  })
 
-  const updateSeatAvailability = (index, subIndex, id) => {
-    const updatedArray = [...outerArray]
-    updatedArray[index][subIndex] = {...updatedArray[index][subIndex]}
+  const updateSeatAvailability = useCallback((index, subIndex) => {
+    const updatedRows = [...rows];
+    updatedRows[index] = [...rows[index]];
+    updatedRows[index][subIndex] = { ...rows[index][subIndex] };
 
-    const thisSeat = updatedArray[index][subIndex]
+    const thisSeat = updatedRows[index][subIndex]
 
-    if (thisSeat.free === true){
-      setReserved(id, thisSeat)
-      setOuter(updatedArray)
-    
+    if (!thisSeat.booked) {
+      thisSeat.reserved = !thisSeat.reserved;
     }
+    setRows(updatedRows)
+  }, [rows, setRows])
 
-    else if(thisSeat.free === false && thisSeat.booked === false){
-      setFree(id, thisSeat)
-      setOuter(updatedArray)
-      
-    }
-    
-  }
 
-  function bookSeat(){
-    
-    for (let i = 0; i < outerArray.length; i++){
-      for (let j = 0; j < outerArray[i].length; j++){
-        if (outerArray[i][j].reserved === true){
-          
-          setBooked(`${i}-${j}` ,outerArray[i][j])
-          console.log("found:", outerArray[i][j])
-        }
+  const bookSeats = useCallback(() => {
+    const newRows = [];
+    for (const row of rows) {
+      const newRow = [];
+      for (const seat of row) {
+        newRow.push({
+          reserved: seat.reserved,
+          booked: seat.reserved
+        });
       }
+      newRows.push(newRow);
     }
+    setRows(newRows);
+  }, [rows, setRows])
 
-  }
-
-  // console.log(outerArray)
-
-  function setReserved(id, seat) {
-    document.getElementById(id).style.cssText = 'background-color: goldenrod'
-    seat.free = false
-    seat.reserved = true
-    seat.booked = false
-  }
-
-  function setFree(id, seat) {
-    document.getElementById(id).style.cssText = ''
-    seat.free = true
-    seat.reserved = false
-    seat.booked = false
-  }
-
-  function setBooked(id, seat) {
-    document.getElementById(id).style.cssText = 'background-color: red'
-    seat.free = false
-    seat.reserved = false
-    seat.booked = true
-  }
 
   return (
     <Layout>
-    <Head>
-      <title>Booker</title>
-    </Head>
-    <h1>Booker</h1>
+      <Head>
+        <title>Booker</title>
+      </Head>
+      <h1>Booker</h1>
 
-    <div className="cinemaHall">
-      {outerArray.map((filler, i) => (
-        <div className="row" key={i}>
-          {filler.map((item, j) => (
-            <React.Fragment key={`${i}-${j}`}>
-              <span className="seats">
-                <button className="seatButton" id={`${i}-${j}`} onClick={() => updateSeatAvailability(i, j, `${i}-${j}`)}></button>
+      <div className="cinemaHall">
+        {rows.map((row, i) => (
+          <div className="row" key={i}>
+            {row.map((seat, j) => (
+              <SeatButton key={`${i}-${j}`} booked={seat.booked} reserved={seat.reserved} onClickHandler={() => { updateSeatAvailability(i, j) }} />
+            ))}
+          </div>
 
-              </span>
-              
-            
-
-            </React.Fragment>
-          ))}
-        <br/><br/>
-        </div>
-        
-      ))}
-    </div>
-    <button onClick={() => bookSeat()}>Book seats</button>
+        ))}
+      </div>
+      <button onClick={() => bookSeats()}>Book seats</button>
 
     </Layout>
   )
+}
+
+
+const SeatButton = ({ booked, reserved, onClickHandler }) => {
+  return <span className="seats">
+    <button
+      className="seatButton"
+      style={{
+        backgroundColor: (booked ? 'red' : reserved ? 'goldenrod' : 'greenyellow'),
+        minWidth: 20,
+        minHeight: 20
+      }}
+      onClick={onClickHandler}
+    ></button>
+  </span>
 }
